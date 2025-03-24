@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+/*
+This is a go program that does the following:
+* expects a path to a yaml file as input
+* expects an yq expression as input
+* generate potential continuations of the yq expression by looking at the output and potentially the grammar
+* test these continuations against the input and print those that give output
+*/
+
 // suggestContinuations generates potential continuations for a YQ expression
 func suggestContinuations(baseExpression string) []string {
 	// List of common YQ operators and selectors
