@@ -15,8 +15,74 @@ This is a go program that does the following:
 * test these continuations against the input and print those that give output
 */
 
+// getKeysFromYQOutput extracts keys from the output of a YQ expression
+func getKeysFromYQOutput(yamlPath, baseExpression string) ([]string, error) {
+	// Try to get keys using YQ
+	keysCmd := exec.Command("yq", baseExpression+" | keys", yamlPath)
+	keysOutput, err := keysCmd.CombinedOutput()
+
+	var keys []string
+
+	if err == nil && len(keysOutput) > 0 && !strings.Contains(string(keysOutput), "Error") {
+		// Parse the keys from the output
+		lines := strings.Split(strings.TrimSpace(string(keysOutput)), "\n")
+		for _, line := range lines {
+			trimmedLine := strings.TrimSpace(line)
+			// Skip empty lines and array indicators like "-"
+			if trimmedLine != "" && trimmedLine != "-" {
+				// Remove any leading "- " that yq might output for arrays
+				key := strings.TrimPrefix(trimmedLine, "- ")
+				keys = append(keys, key)
+			}
+		}
+	}
+
+	// Try another approach if the first didn't work - check if it's an object directly
+	if len(keys) == 0 {
+		// Sometimes direct properties are better detected with this approach
+		fieldsCmd := exec.Command("yq", baseExpression+" | to_entries | .[] | .key", yamlPath)
+		fieldsOutput, err := fieldsCmd.CombinedOutput()
+
+		if err == nil && len(fieldsOutput) > 0 && !strings.Contains(string(fieldsOutput), "Error") {
+			lines := strings.Split(strings.TrimSpace(string(fieldsOutput)), "\n")
+			for _, line := range lines {
+				trimmedLine := strings.TrimSpace(line)
+				if trimmedLine != "" && trimmedLine != "-" {
+					key := strings.TrimPrefix(trimmedLine, "- ")
+					keys = append(keys, key)
+				}
+			}
+		}
+	}
+
+	return keys, nil
+}
+
+// joinYQExpressions properly joins a base YQ expression with a sub-path or operation
+func joinYQExpressions(base, subPath string) string {
+	// If subPath starts with a pipe or other operator, just concatenate
+	if strings.HasPrefix(subPath, "|") || strings.HasPrefix(subPath, "[") {
+		return base + subPath
+	}
+
+	// Handle the root expression case
+	if base == "." && strings.HasPrefix(subPath, ".") {
+		// Avoid having ".." in the result
+		return subPath
+	} else if base == "." && !strings.HasPrefix(subPath, ".") {
+		// Add dot before a key name if needed
+		return base + subPath
+	} else if !strings.HasPrefix(subPath, ".") && !strings.HasPrefix(subPath, "[") {
+		// Add separator dot between base and subPath
+		return base + "." + subPath
+	}
+
+	// Default concatenation for other cases
+	return base + subPath
+}
+
 // suggestContinuations generates potential continuations for a YQ expression
-func suggestContinuations(baseExpression string) []string {
+func suggestContinuations(baseExpression, yamlPath string) []string {
 	// List of common YQ operators and selectors
 	continuations := []string{
 		// Filtering and selection
@@ -49,7 +115,22 @@ func suggestContinuations(baseExpression string) []string {
 
 	var fullContinuations []string
 	for _, cont := range continuations {
-		fullContinuations = append(fullContinuations, baseExpression+cont)
+		fullContinuations = append(fullContinuations, joinYQExpressions(baseExpression, cont))
+	}
+
+	// Add continuations based on the keys in the output
+	keys, err := getKeysFromYQOutput(yamlPath, baseExpression)
+	if err == nil {
+		for _, key := range keys {
+			// For numeric or simple keys
+			fullContinuations = append(fullContinuations, joinYQExpressions(baseExpression, "."+key))
+
+			// For keys that might contain special characters
+			fullContinuations = append(fullContinuations, joinYQExpressions(baseExpression, fmt.Sprintf(".[%q]", key)))
+
+			// Common operations on specific keys
+			fullContinuations = append(fullContinuations, fmt.Sprintf("%s | has(%q)", baseExpression, key))
+		}
 	}
 
 	return fullContinuations
@@ -76,7 +157,7 @@ func main() {
 	baseExpression := os.Args[2]
 
 	// Generate potential continuations
-	continuations := suggestContinuations(baseExpression)
+	continuations := suggestContinuations(baseExpression, yamlPath)
 
 	fmt.Println("Testing potential YQ expression continuations:")
 	fmt.Println("----------------------------------------------")
