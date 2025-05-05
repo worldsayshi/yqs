@@ -173,21 +173,15 @@ func main() {
 	} else {
 		baseExpression = os.Args[2]
 	}
-	// log.Println("arg 0:")
 
 	// Generate potential continuations
 	continuations := suggestContinuations(baseExpression, yamlPath)
-
-	// fmt.Println("Testing potential YQ expression continuations:")
-	// fmt.Println("----------------------------------------------")
 
 	_, err := testYQExpression(yamlPath, baseExpression)
 	if err != nil {
 		fmt.Println("Base expression is invalid")
 		os.Exit(1)
 	}
-	//fmt.Println("Output of base expression:")
-	//fmt.Println(output)
 
 	// Collect valid continuations
 	var validContinuations []string
@@ -197,7 +191,6 @@ func main() {
 		output, err := testYQExpression(yamlPath, cont)
 
 		if err == nil && output != "" && output != "null" {
-			// fmt.Printf("Continuation: %s\n", cont)
 			validContinuations = append(validContinuations, cont)
 		}
 	}
@@ -206,7 +199,7 @@ func main() {
 	if len(validContinuations) > 0 {
 		selected := runFzfSelection(validContinuations)
 		if selected != "" {
-			fmt.Printf("\nyq '%s' %s\n", selected, yamlPath)
+			fmt.Printf("yq '%s' %s\n", selected, yamlPath)
 		}
 	}
 }
