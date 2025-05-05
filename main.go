@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -152,17 +153,56 @@ func runFzfSelection(options []string) string {
 	cmd := exec.Command("fzf")
 	cmd.Stdin = strings.NewReader(strings.Join(options, "\n"))
 	output, err := cmd.CombinedOutput()
-	if err != nil {
+	// If error status is 130, it means the user cancelled the fzf selection
+	if err != nil && err.Error() != "exit status 130" {
 		log.Printf("Error running fzf: %v", err)
 		return ""
 	}
 	return strings.TrimSpace(string(output))
 }
 
+const bashInstallScript = `#!/bin/bash
+suggest_command() {
+	if ! command -v yqs &> /dev/null
+	then
+		echo "yqs command not found. Please install yqs first."
+		return
+	fi
+    all_yaml_files=$(find . -type f -name "*.yaml" -o -name "*.yml")
+    if [ -z "$all_yaml_files" ]; then
+        echo "No YAML files found in the current directory."
+        return
+    fi
+    yaml_path=$(fzf --header "Select a YAML file" --height 40% --preview 'cat {}' <<< "$all_yaml_files")
+    if [ -z "$yaml_path" ]; then
+		echo "No YAML file selected."
+		return
+	fi
+	cmd=$(yqs $yaml_path)
+    if [ -z "$cmd" ]; then
+        echo "No command generated."
+        return
+    fi
+    READLINE_LINE="$cmd"
+    READLINE_POINT=${#READLINE_LINE}
+}
+
+bind -x '"\C-g": suggest_command'`
+
 func main() {
+	// Add command installation flag
+	installCommand := flag.String("command-installation", "", "Output shell configuration (supported: bash)")
+
+	// Parse flags
+	flag.Parse()
+	if *installCommand == "bash" {
+		fmt.Println(bashInstallScript)
+		os.Exit(0)
+	}
 	// Check for correct number of arguments
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: " + os.Args[0] + " <yaml_file_path> <base_yq_expression>")
+		fmt.Println("Or use `source <(yqs --command-installation bash)` to install the command in your shell.")
 		os.Exit(1)
 	}
 	yamlPath := os.Args[1]
