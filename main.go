@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -148,13 +149,23 @@ func testYQExpression(yamlPath, expression string) (string, error) {
 
 func main() {
 	// Check for correct number of arguments
-	if len(os.Args) != 3 {
+	if len(os.Args) < 2 {
 		fmt.Println("Usage: yq-continuation-generator <yaml_file_path> <base_yq_expression>")
 		os.Exit(1)
 	}
-
 	yamlPath := os.Args[1]
-	baseExpression := os.Args[2]
+	log.Println("length of args", len(os.Args))
+	var baseExpression string
+	if len(os.Args) < 3 {
+		baseExpression = "."
+	} else {
+		baseExpression = os.Args[2]
+	}
+	// baseExpression := os.Args[2]
+	// if the base expression is empty, set it to "."
+	// if baseExpression == "" {
+	// 	baseExpression = "."
+	// }
 
 	// Generate potential continuations
 	continuations := suggestContinuations(baseExpression, yamlPath)
