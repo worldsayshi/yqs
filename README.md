@@ -2,7 +2,8 @@
 
 Install:
 ```bash
-go install github.com/worldsayshi/yqs@v0.0.1
+go install github.com/worldsayshi/yqs@v0.0.2
+# And put the following in your ~/.bashrc or equivalent: 
 source <(yqs --command-installation bash)
 ```
 
