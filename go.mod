@@ -1,4 +1,4 @@
-module yqs
+module github.com/worldsayshi/yqs
 
 go 1.22.1
 
