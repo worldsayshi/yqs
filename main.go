@@ -147,45 +147,66 @@ func testYQExpression(yamlPath, expression string) (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+// runFzfSelection feeds a list of options to fzf and returns the selected option
+func runFzfSelection(options []string) string {
+	cmd := exec.Command("fzf")
+	cmd.Stdin = strings.NewReader(strings.Join(options, "\n"))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Error running fzf: %v", err)
+		return ""
+	}
+	return strings.TrimSpace(string(output))
+}
+
 func main() {
 	// Check for correct number of arguments
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: yq-continuation-generator <yaml_file_path> <base_yq_expression>")
+		fmt.Println("Usage: " + os.Args[0] + " <yaml_file_path> <base_yq_expression>")
 		os.Exit(1)
 	}
 	yamlPath := os.Args[1]
-	log.Println("length of args", len(os.Args))
+
 	var baseExpression string
 	if len(os.Args) < 3 {
 		baseExpression = "."
 	} else {
 		baseExpression = os.Args[2]
 	}
-	// baseExpression := os.Args[2]
-	// if the base expression is empty, set it to "."
-	// if baseExpression == "" {
-	// 	baseExpression = "."
-	// }
+	// log.Println("arg 0:")
 
 	// Generate potential continuations
 	continuations := suggestContinuations(baseExpression, yamlPath)
 
-	fmt.Println("Testing potential YQ expression continuations:")
-	fmt.Println("----------------------------------------------")
+	// fmt.Println("Testing potential YQ expression continuations:")
+	// fmt.Println("----------------------------------------------")
 
-	output, err := testYQExpression(yamlPath, baseExpression)
+	_, err := testYQExpression(yamlPath, baseExpression)
 	if err != nil {
 		fmt.Println("Base expression is invalid")
 		os.Exit(1)
 	}
-	fmt.Println("Output of base expression:")
-	fmt.Println(output)
+	//fmt.Println("Output of base expression:")
+	//fmt.Println(output)
+
+	// Collect valid continuations
+	var validContinuations []string
+
 	// Test each continuation
 	for _, cont := range continuations {
 		output, err := testYQExpression(yamlPath, cont)
 
 		if err == nil && output != "" && output != "null" {
-			fmt.Printf("Continuation: %s\n", cont)
+			// fmt.Printf("Continuation: %s\n", cont)
+			validContinuations = append(validContinuations, cont)
+		}
+	}
+
+	// If we have valid continuations, feed them to fzf for selection
+	if len(validContinuations) > 0 {
+		selected := runFzfSelection(validContinuations)
+		if selected != "" {
+			fmt.Printf("\nyq '%s' %s\n", selected, yamlPath)
 		}
 	}
 }

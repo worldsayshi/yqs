@@ -1,4 +1,4 @@
-module yq-suggest
+module yqs
 
 go 1.22.1
 
