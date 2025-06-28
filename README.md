@@ -16,6 +16,10 @@ source <(yqs --command-installation bash)
 ```
 Then press ctrl-g.
 
+## Demo
+
+![asciicast](https://asciinema.org/a/K9IyNRSgoBm7FsurAw35V7utu.svg)](https://asciinema.org/a/K9IyNRSgoBm7FsurAw35V7utu)
+
 ## TODO's
 
 - [ ] Make key mapping customizable
