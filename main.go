@@ -214,32 +214,49 @@ func main() {
 		baseExpression = os.Args[2]
 	}
 
-	// Generate potential continuations
-	continuations := suggestContinuations(baseExpression, yamlPath)
+	// Loop until user selects empty or cancels
+	currentExpression := baseExpression
+	for {
+		// Test the current expression to make sure it's valid
+		_, err := testYQExpression(yamlPath, currentExpression)
+		if err != nil {
+			if currentExpression == baseExpression {
+				fmt.Println("Base expression is invalid")
+				os.Exit(1)
+			} else {
+				fmt.Printf("Expression '%s' is invalid, stopping\n", currentExpression)
+				break
+			}
+		}
 
-	_, err := testYQExpression(yamlPath, baseExpression)
-	if err != nil {
-		fmt.Println("Base expression is invalid")
-		os.Exit(1)
-	}
+		// Generate potential continuations based on the current expression
+		continuations := suggestContinuations(currentExpression, yamlPath)
 
-	// Collect valid continuations
-	var validContinuations []string
+		// Collect valid continuations
+		var validContinuations []string
+		for _, cont := range continuations {
+			output, err := testYQExpression(yamlPath, cont)
+			if err == nil && output != "" && output != "null" {
+				validContinuations = append(validContinuations, cont)
+			}
+		}
 
-	// Test each continuation
-	for _, cont := range continuations {
-		output, err := testYQExpression(yamlPath, cont)
+		// If we have valid continuations, feed them to fzf for selection
+		if len(validContinuations) > 0 {
+			selected := runFzfSelection(validContinuations)
+			if selected == "" {
+				// User cancelled or selected empty, break and print final command
+				break
+			}
 
-		if err == nil && output != "" && output != "null" {
-			validContinuations = append(validContinuations, cont)
+			// Update current expression and continue
+			currentExpression = selected
+		} else {
+			// No valid continuations available
+			break
 		}
 	}
 
-	// If we have valid continuations, feed them to fzf for selection
-	if len(validContinuations) > 0 {
-		selected := runFzfSelection(validContinuations)
-		if selected != "" {
-			fmt.Printf("yq '%s' %s\n", selected, yamlPath)
-		}
-	}
+	// Print the final command
+	fmt.Printf("yq '%s' %s\n", currentExpression, yamlPath)
 }
