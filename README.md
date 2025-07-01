@@ -1,4 +1,4 @@
-
+`yqs` is a complement to [`yq`](https://github.com/mikefarah/yq) that gives you clever yq query completion in the terminal when you press ctrl-g.
 
 Install:
 ```bash
