@@ -2,8 +2,8 @@
 
 Install:
 ```bash
-go install github.com/worldsayshi/yqs@v0.0.2
-# And put the following in your ~/.bashrc or equivalent: 
+go install github.com/worldsayshi/yqs@v0.0.3
+# And put the following in your ~/.bashrc or equivalent:
 source <(yqs --command-installation bash)
 ```
 
@@ -18,7 +18,7 @@ Then press ctrl-g.
 
 ## Demo
 
-![asciicast](https://asciinema.org/a/K9IyNRSgoBm7FsurAw35V7utu.svg)](https://asciinema.org/a/K9IyNRSgoBm7FsurAw35V7utu)
+[![asciicast](https://asciinema.org/a/K9IyNRSgoBm7FsurAw35V7utu.svg)](https://asciinema.org/a/K9IyNRSgoBm7FsurAw35V7utu)
 
 ## TODO's
 
