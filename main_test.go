@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestSuggestContinuationsWithContent(t *testing.T) {
+func TestSuggestContinuations(t *testing.T) {
 	yamlContent := `
 name: "test"
 users:
@@ -45,7 +45,7 @@ config:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			suggestions := suggestContinuationsWithContent(tt.baseExpression, tt.yamlContent)
+			suggestions := suggestContinuations(tt.baseExpression, tt.yamlContent)
 
 			if len(suggestions) < tt.expectedCount {
 				t.Errorf("Expected at least %d suggestions, got %d", tt.expectedCount, len(suggestions))
@@ -68,7 +68,7 @@ config:
 	}
 }
 
-func TestGetKeysFromYQOutputWithContent(t *testing.T) {
+func TestGetKeysFromYQOutput(t *testing.T) {
 	yamlContent := `
 name: "test"
 users:
@@ -109,7 +109,7 @@ config:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			keys, err := getKeysFromYQOutputWithContent(tt.yamlContent, tt.baseExpression)
+			keys, err := getKeysFromYQOutput(tt.yamlContent, tt.baseExpression)
 
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
@@ -136,7 +136,9 @@ config:
 	}
 }
 
-func TestTestYQExpressionWithContent(t *testing.T) {
+// Low value test, it just tests our wrapper around yq
+// We probably don't need to prioritize maintaining it
+func TestTestYQExpressionFromContent(t *testing.T) {
 	yamlContent := `
 name: "test"
 users:
@@ -185,7 +187,7 @@ users:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := testYQExpressionWithContent(tt.yamlContent, tt.expression)
+			result, err := testYQExpressionFromContent(tt.yamlContent, tt.expression)
 
 			if tt.shouldError && err == nil {
 				t.Error("Expected an error but got none")
