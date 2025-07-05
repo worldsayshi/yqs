@@ -168,7 +168,7 @@ func testYQExpression(yamlPath, expression string) (string, error) {
 
 // runFzfSelection feeds a list of options to fzf and returns the selected option
 func runFzfSelection(options []string) string {
-	cmd := exec.Command("fzf")
+	cmd := exec.Command("fzf", "--header", "Select a YQ expression continuation (ESC to finish)")
 	cmd.Stdin = strings.NewReader(strings.Join(options, "\n"))
 	output, err := cmd.CombinedOutput()
 	// If error status is 130, it means the user cancelled the fzf selection
@@ -208,22 +208,32 @@ suggest_command() {
 bind -x '"\C-g": suggest_command'`
 
 func main() {
+	// Set up flag usage
+	flag.Usage = func() {
+		fmt.Println("Usage: " + os.Args[0] + " <yaml_file_path> [base_yq_expression]")
+		fmt.Println("Or use `source <(yqs --command-installation bash)` to install the command in your shell.")
+		fmt.Println()
+		fmt.Println("Flags:")
+		flag.PrintDefaults()
+	}
+
 	// Add command installation flag
 	installCommand := flag.String("command-installation", "", "Output shell configuration (supported: bash)")
 
 	// Parse flags
 	flag.Parse()
+
 	if *installCommand == "bash" {
 		fmt.Println(bashInstallScript)
 		os.Exit(0)
 	}
+
 	// Check for correct number of arguments
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: " + os.Args[0] + " <yaml_file_path> <base_yq_expression>")
-		fmt.Println("Or use `source <(yqs --command-installation bash)` to install the command in your shell.")
+	if flag.NArg() < 1 {
+		flag.Usage()
 		os.Exit(1)
 	}
-	yamlPath := os.Args[1]
+	yamlPath := flag.Arg(0)
 
 	// Read the YAML file content once at the beginning
 	yamlContent, err := os.ReadFile(yamlPath)
@@ -233,10 +243,10 @@ func main() {
 	}
 
 	var baseExpression string
-	if len(os.Args) < 3 {
+	if flag.NArg() < 2 {
 		baseExpression = "."
 	} else {
-		baseExpression = os.Args[2]
+		baseExpression = flag.Arg(1)
 	}
 
 	// Loop until user selects empty or cancels

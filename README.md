@@ -22,7 +22,6 @@ Then press ctrl-g.
 
 ## TODO's
 
-- [ ] Bug: integer indices will render as strings in the calculated expression
 - [ ] Make key mapping customizable
 
 ## Future work:
